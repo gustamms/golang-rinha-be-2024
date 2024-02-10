@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	transactionService "goravel/app/services"
+
 	"github.com/goravel/framework/contracts/http"
 )
 
 type TransactionController struct {
 	//Dependent services
+	transactionService.TransactionService
 }
 
 func NewTransactionController() *TransactionController {
@@ -15,12 +18,16 @@ func NewTransactionController() *TransactionController {
 }
 
 func (r *TransactionController) Create(ctx http.Context) http.Response {
-
 	validator, err := ctx.Request().Validate(map[string]string{
-		"valor":     "required|int|min_len:0",
+		"valor":     "required",
 		"tipo":      "required|string|in:c,d",
 		"descricao": "required|max_len:10|string",
 	})
+
+	id := ctx.Request().Input("id")
+	value := ctx.Request().Input("valor")
+	tipo := ctx.Request().Input("tipo")
+	description := ctx.Request().Input("descricao")
 
 	if err != nil {
 		return ctx.Response().Json(http.StatusUnprocessableEntity, http.Json{
@@ -33,9 +40,17 @@ func (r *TransactionController) Create(ctx http.Context) http.Response {
 		})
 	}
 
-	id := ctx.Request().Input("id")
+	service := transactionService.NewTransactionService()
+	response, err := service.Create(id, tipo, description, value)
+
+	if err != nil {
+		return ctx.Response().Json(http.StatusInternalServerError, http.Json{
+			"message": err,
+		})
+	}
 
 	return ctx.Response().Json(http.StatusOK, http.Json{
-		"message": id,
+		"transaction": response,
+		"message":     "Criado com sucesso!",
 	})
 }
